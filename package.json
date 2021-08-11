@@ -1,0 +1,14 @@
+{
+  "name": "lyric-finder",
+  "version": "1.0.0",
+  "description": "A music/lyric downloader",
+  "main": "./build/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+   "lf": "./build/index.js"
+ },
+  "author": "",
+  "license": "ISC"
+}
