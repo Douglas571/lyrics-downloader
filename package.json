@@ -7,8 +7,20 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-   "lf": "./build/index.js"
- },
+    "lf": "./build/index.js"
+  },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@types/jsdom": "^16.2.13",
+    "commander": "^8.1.0",
+    "fs-extra": "^10.0.0",
+    "got": "^11.8.2",
+    "jsdom": "^16.7.0",
+    "jspdf": "^2.3.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.12",
+    "@types/node": "^16.6.0"
+  }
 }
