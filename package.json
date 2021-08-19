@@ -4,7 +4,8 @@
   "description": "A music/lyric downloader",
   "main": "./build/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "tsc -w"
   },
   "bin": {
     "lf": "./build/index.js"

@@ -24,16 +24,16 @@ async function main() {
 
 	const OUT_DIR = path.join(HOMEPATH, 'LF')
 
-	CLI.option('-a, --download-album-lyrics <url>', 'print a gretting')
+	CLI.option('-a, --download-albums-lyrics <url>', 'print a gretting')
 	CLI.parse(argv)
 
 	const opts = CLI.opts()
 
 	console.log(opts)
 
-	if(opts.downloadAlbumLyrics) {
+	if(opts.downloadAlbumsLyrics) {
 		console.log('downloading lyric..')
-		let URL: string = opts.downloadAlbumLyrics
+		let URL: string = opts.downloadAlbumsLyrics
 
 		//const res = await Got(URL)
 		//const html: string = res.body
@@ -44,23 +44,59 @@ async function main() {
 
 		try {
 
-			const html = await fs.readFile(filePath, 'utf8')
-			await downloadTranslateLyric(URL, OUT_DIR, html)
+			//const html = await fs.readFile(filePath, 'utf8')
+			await downloadAlbumsLyrics(URL, OUT_DIR)
+
+			//await downloadTranslateLyric(URL, OUT_DIR, html)
 
 		} catch(err) {
 			console.log(err)
 		}
-
-		/*
-		try {
-			await fsExtra.outputFile(filePath, html)
-			console.log('success!!')
-		} catch (err) {
-			console.log(err)
-		}
-		*/
-
 	}
+}
+
+type AlbumData = {
+	lyrics: {
+		title: string,
+		url: Array<string>
+	}
+}
+
+async function downloadAlbumsLyrics( url: string, outDir: string ) {
+	//const res = await Got(url)
+	//const html: string = res.body
+
+	const filePath = path.join(outDir, 'album.html')	
+
+	//await fs.outputFile(filePath, html)
+
+	const html: string = await fs.readFile(filePath, 'utf8')
+	const virtualDom: DocumentFragment = JSDOM.fragment(html)
+
+
+	const albumData: AlbumData = getAlbumData(virtualDom)
+
+	console.log(albumData.lyrics)
+}
+
+function getAlbumData(virtualDom: DocumentFragment) {
+	let albumData = { lyrics: [] }
+
+	let tracks = virtualDom.querySelectorAll('li[id*="track_"]')
+  tracks.forEach( track => {
+    let lyric = {}
+
+    lyric.state = 1
+    lyric.track = Number(track.querySelector('div.mui-cell__index-view').textContent)
+    lyric.url = 'https://www.musixmatch.com' + track.querySelector('a').getAttribute('href')
+    lyric.title = track.querySelector('h2.mui-cell__title').textContent
+
+    //albumData.lyricsToDownload.push(lyric)
+
+    albumData.lyrics.push({ title: lyric.title, url: lyric.url })
+  })
+
+  return albumData
 }
 
 async function downloadTranslateLyric( url:string, outDir: string, html: string ): Promise<TranslateLyric>{
@@ -81,8 +117,8 @@ async function downloadTranslateLyric( url:string, outDir: string, html: string 
 	lyric.en = translateLines.en
 	lyric.sp = translateLines.sp  	
 
-  	lyric.art = getLyricArtists(virtualDom) 
-    lyric.title = getTitle(virtualDom)
+  lyric.art = getLyricArtists(virtualDom) 
+   lyric.title = getTitle(virtualDom)
 	
 	lyric.text = getTextFormated(lyric)
 	
