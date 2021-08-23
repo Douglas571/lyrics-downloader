@@ -77,10 +77,6 @@ async function getLyricHtml(url: string, idx: number, onXSec: number): Promise<D
 
 		      console.log(err.message)
 
-		      if(err.message.include('404')) {
-		      	rej(new Error('404'))
-		      }
-
 		      if(req.isCanceled) {
 
 		        console.log('the reques is canseled and will be resend:' + url)

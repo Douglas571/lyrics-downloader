@@ -8,6 +8,8 @@ import { JSDOM } from 'jsdom'
 import { jsPDF } from 'jspdf'
 import path from 'path'
 
+import sanitize from 'sanitize-filename'
+
 import { AlbumData, TranslateLyric, TranslateLines, LyricWithHTML, STATES } from './types'
 import { downloadAllLyrics } from './request-assistant'
 
@@ -85,9 +87,13 @@ async function downloadAlbumLyrics( url: string, outDir: string ) {
 		albumData.lyricsWithHTML = await downloadAllLyrics(albumData, 4)
 
 		albumData.lyricsWithHTML.forEach(async(l, idx) => {
-			let title = albumData.title || String(Date.now())
-			title = title.slice(0, 30).trim()
-			await fs.outputFile(path.join(outDir, title , l.title + "-" + idx + ".html"), l.html)
+			let filename = sanitize(l.title + "-" + idx + ".html")
+			
+			let folder = albumData.title || String(Date.now())
+			folder = folder.slice(0, 30).trim()
+			folder = sanitize(folder)
+
+			await fs.outputFile(path.join(outDir, folder , filename), l.html)
 		})
 
 		albumData.fullLyrics = albumData.lyricsWithHTML.map( l => extractTranslateLyric(JSON.parse(JSON.stringify(l))))
@@ -95,9 +101,13 @@ async function downloadAlbumLyrics( url: string, outDir: string ) {
 		console.log(albumData.lyrics)
 
 		albumData.fullLyrics.forEach( async (l, idx) => {
-			let title = albumData.title || String(Date.now())
-			title = title.slice(0, 30).trim()
-			await fs.outputFile(path.join(outDir, title, l.title + "-" + idx + ".txt"), l.text)
+			let filename = sanitize(l.title + "-" + idx + ".txt")
+			
+			let folder = albumData.title || String(Date.now())
+			folder = folder.slice(0, 30).trim()
+			folder = sanitize(folder)
+
+			await fs.outputFile(path.join(outDir, folder, filename), l.text)
 		})
 
 		await fs.outputFile(filePath2, JSON.stringify(albumData))
@@ -207,7 +217,7 @@ function getTitle(virtualDom: DocumentFragment) {
 function getTextFormated(lyric: TranslateLyric): string {
 	let lyricText: string = ''
 	lyricText += lyric.title + '\r\n'
-	lyricText += lyric.art.join(', ') + '\r\n\n'
+	lyricText += lyric.art.join(', ') + '\r\n\n\n'
 
   	lyric.en.map( (line, idx) => {
   		line = line.trim()
