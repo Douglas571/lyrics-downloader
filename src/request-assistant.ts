@@ -1,7 +1,7 @@
 import got from 'got'
 import { TranslateLyric, LyricToDownload, LyricWithHTML, AlbumData, STATES } from './types'
 
-export async function downloadAllLyrics(albumData: AlbumData, timeDiff = 2.5): Promise<LyricWithHTML[]> {
+export async function downloadAllLyrics(albumData: AlbumData, timeDiff = 2.5, groupBy = 3): Promise<LyricWithHTML[]> {
 	let lyrics = JSON.parse(JSON.stringify(albumData.lyrics))
 
 	while(thereLyricsPendin(lyrics)) {
@@ -12,6 +12,11 @@ export async function downloadAllLyrics(albumData: AlbumData, timeDiff = 2.5): P
 		let counter = 0
 		for( let idx = 0; idx < lyrics.length; idx++ ) {
 			let l = lyrics[idx]
+
+			console.log("counter: " + counter)
+			if(counter == groupBy) {
+				continue
+			}
 
 			if( l.state === STATES.PENDING ) {
 				let url = l.url
@@ -25,6 +30,8 @@ export async function downloadAllLyrics(albumData: AlbumData, timeDiff = 2.5): P
 		const results = await Promise.allSettled(pendingHTMLs)
 
 		for(let res of results) {
+			
+
 			if(res.status === 'fulfilled') {
 				let { idx, html } = res.value 
 
@@ -64,11 +71,15 @@ async function getLyricHtml(url: string, idx: number, onXSec: number): Promise<D
 		      console.log(body.slice(0, 25))
 
 		      clearTimeout(idTimer)
-		      res({ html: body.slice(0, 25), idx })
+		      res({ html: body, idx })
 
 		    } catch(err) {
 
 		      console.log(err.message)
+
+		      if(err.message.include('404')) {
+		      	rej(new Error('404'))
+		      }
 
 		      if(req.isCanceled) {
 
@@ -82,6 +93,7 @@ async function getLyricHtml(url: string, idx: number, onXSec: number): Promise<D
 	})
 }
 
+/*
 (async () => {
 	let lyrics: LyricToDownload[] = [
 		{
@@ -111,10 +123,19 @@ async function getLyricHtml(url: string, idx: number, onXSec: number): Promise<D
 		},
 	]
 
+
+
 	let album = { lyrics }
+
+	console.log(album.lyrics.map( l => {
+		l.url = l.url + '/translate/spanish'
+		return l
+	}))
+
 	album.lyrics = await downloadAllLyrics(album)
 
 
 	console.log('READY')
 	console.log(album)
 })();
+*/

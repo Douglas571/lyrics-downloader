@@ -66,6 +66,7 @@ async function downloadAlbumLyrics( url: string, outDir: string ) {
 	//const html: string = res.body
 
 	const filePath = path.join(outDir, 'album.json')	
+	const filePath2 = path.join(outDir, 'album2.json')	
 	//await fs.outputFile(filePath, html)
 
 	try {
@@ -74,19 +75,32 @@ async function downloadAlbumLyrics( url: string, outDir: string ) {
 
 		const virtualDom: DocumentFragment = JSDOM.fragment(html)
 
-		const albumData: AlbumData = getAlbumData(virtualDom)
+		let albumData: AlbumData = getAlbumData(virtualDom)
 
 		albumData.lyrics.map( l => {
-			let newLyric = JSON.parse(JSON.stringify(l))
-			newLyric.url += '/traduccion/espanol'
-			return newLyric
+			l.url += '/traduccion/espanol'
+			return l
 		})
 
-		albumData.lyrics = await downloadAllLyrics(albumData, 4)
-		albumData.lyrics.map( l => extractTranslateLyric(JSON.parse(JSON.stringify(l))))
+		albumData.lyricsWithHTML = await downloadAllLyrics(albumData, 4)
+
+		albumData.lyricsWithHTML.forEach(async(l, idx) => {
+			let title = albumData.title || String(Date.now())
+			title = title.slice(0, 30).trim()
+			await fs.outputFile(path.join(outDir, title , l.title + "-" + idx + ".html"), l.html)
+		})
+
+		albumData.fullLyrics = albumData.lyricsWithHTML.map( l => extractTranslateLyric(JSON.parse(JSON.stringify(l))))
 
 		console.log(albumData.lyrics)
-		await fs.outputFile(filePath, JSON.parse(JSON.stringify(albumData)))
+
+		albumData.fullLyrics.forEach( async (l, idx) => {
+			let title = albumData.title || String(Date.now())
+			title = title.slice(0, 30).trim()
+			await fs.outputFile(path.join(outDir, title, l.title + "-" + idx + ".txt"), l.text)
+		})
+
+		await fs.outputFile(filePath2, JSON.stringify(albumData))
 
 	} catch(err) {
 		console.log(err)
@@ -95,6 +109,8 @@ async function downloadAlbumLyrics( url: string, outDir: string ) {
 
 function getAlbumData(virtualDom: DocumentFragment) {
 	let albumData: AlbumData = { lyrics: []}
+
+	albumData.title = virtualDom.querySelector('div.mxm-album-banner__title h1')!.textContent || "sin-nombre"
 
 	let tracks = virtualDom.querySelectorAll('li[id*="track_"]')
   tracks.forEach( track => {
@@ -117,7 +133,7 @@ function getAlbumData(virtualDom: DocumentFragment) {
   return albumData
 }
 
-function extractTranslateLyric(lyricWithHTML: LyricWithHTML): Promise<TranslateLyric>{
+function extractTranslateLyric(lyricWithHTML: LyricWithHTML): TranslateLyric{
 	let lyric = JSON.parse(JSON.stringify(lyricWithHTML))
 
 	const virtualDom = createVirtualDom(lyric.html)
@@ -161,10 +177,10 @@ function getTranslateLines(virtualDom: DocumentFragment): TranslateLines {
 	      .push(node[1].textContent || '')
 	  })
 
-	translateLines.en = translateLines.en.map( line => line + '\n')
-  	translateLines.sp = translateLines.sp.map( line => line + '\n')
+	translateLines.en = translateLines.en.map( line => line + '\r\n')
+  translateLines.sp = translateLines.sp.map( line => line + '\r\n')
 
-  	return translateLines
+  return translateLines
 }
 
 function getLyricArtists(virtualDom: DocumentFragment) {
@@ -190,8 +206,8 @@ function getTitle(virtualDom: DocumentFragment) {
 
 function getTextFormated(lyric: TranslateLyric): string {
 	let lyricText: string = ''
-	lyricText += lyric.title + '\n'
-	lyricText += lyric.art.join(', ') + '\n\n'
+	lyricText += lyric.title + '\r\n'
+	lyricText += lyric.art.join(', ') + '\r\n\n'
 
   	lyric.en.map( (line, idx) => {
   		line = line.trim()
@@ -199,7 +215,7 @@ function getTextFormated(lyric: TranslateLyric): string {
   		lyricText += line
 
   		if(lyric.sp[idx].trim() !== '') {
-  			lyricText += '\n -' + lyric.sp[idx] + '\n'
+  			lyricText += '\r\n -' + lyric.sp[idx] + '\r\n'
   		} else {
   			lyricText += lyric.sp[idx]
   		}

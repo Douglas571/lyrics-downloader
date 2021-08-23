@@ -1,6 +1,7 @@
 const PENDING = 'pending',
 	  DONWLOADING = 'downloading',
-	  READY = 'ready'
+	  READY = 'ready',
+	  NOT_FOUND = '404'
 
 export const STATES = {
 	PENDING,
@@ -28,7 +29,11 @@ export type TranslateLyric = LyricWithHTML & {
 }
 
 export type AlbumData = {
-	lyrics: Array<LyricToDownload | LyricWithHTML | TranslateLyric>
+	title?: string,
+
+	lyrics: Array<LyricToDownload | LyricWithHTML | TranslateLyric>,
+	lyricsWithHTML?: Array<LyricWithHTML>,
+	fullLyrics?: Array<TranslateLyric> 
 }
 
 export type TranslateLines = { 
