@@ -10,14 +10,16 @@ async function downloadAlbumLyrics(albumData: AlbumData, timeDiff = 2.5): Promis
 
 		let pendingHTMLs = []
 
+		let counter = 0
 		for( let idx = 0; idx < lyrics.length; idx++ ) {
 			let l = lyrics[idx]
 
 			if( l.state === STATES.PENDING ) {
 				let url = l.url
-				let onXSec = timeDiff * idx
+				let onXSec = timeDiff * counter
 
 				pendingHTMLs.push(getLyricHtml(url, idx, onXSec))
+				counter++
 			}
 		}
 
