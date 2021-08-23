@@ -1,8 +1,7 @@
 import got from 'got'
+import { TranslateLyric, LyricToDownload, LyricWithHTML, AlbumData, STATES } from './types'
 
-import { TranslateLyric, AlbumData, STATES } from './types'
-
-async function downloadAlbumLyrics(albumData: AlbumData, timeDiff = 2.5): Promise<TranslateLyric[]> {
+export async function downloadAllLyrics(albumData: AlbumData, timeDiff = 2.5): Promise<LyricWithHTML[]> {
 	let lyrics = JSON.parse(JSON.stringify(albumData.lyrics))
 
 	while(thereLyricsPendin(lyrics)) {
@@ -84,7 +83,7 @@ async function getLyricHtml(url: string, idx: number, onXSec: number): Promise<D
 }
 
 (async () => {
-	let lyrics: TranslateLyric[] = [
+	let lyrics: LyricToDownload[] = [
 		{
 			title: '1975',
 			url: 'https://www.lyrics.com/lyric/29577373/The+1975/The+1975',
@@ -100,10 +99,20 @@ async function getLyricHtml(url: string, idx: number, onXSec: number): Promise<D
 			url: 'https://www.lyrics.com/lyric/33573512/Love+Me',
 			state: STATES.PENDING
 		},
+		{
+			title: 'Some body else',
+			url: 'https://www.lyrics.com/lyric/32632208/Somebody+Else',
+			state: STATES.PENDING
+		},
+		{
+			title: 'Love me',
+			url: 'https://www.lyrics.com/lyric/33573512/Love+Me',
+			state: STATES.PENDING
+		},
 	]
 
 	let album = { lyrics }
-	album.lyrics = await downloadAlbumLyrics(album)
+	album.lyrics = await downloadAllLyrics(album)
 
 
 	console.log('READY')

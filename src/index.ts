@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+require('source-map-support').install()
 
 import { Command } from 'commander'
 import Got from 'got'
@@ -6,6 +7,9 @@ import fs from 'fs-extra'
 import { JSDOM } from 'jsdom'
 import { jsPDF } from 'jspdf'
 import path from 'path'
+
+import { AlbumData, TranslateLyric, TranslateLines, LyricWithHTML, STATES } from './types'
+import { downloadAllLyrics } from './request-assistant'
 
 //import reqAssist from './request-assistant'
 
@@ -47,7 +51,7 @@ async function main() {
 		try {
 
 			//const html = await fs.readFile(filePath, 'utf8')
-			await downloadAlbumsLyrics(URL, OUT_DIR)
+			await downloadAlbumLyrics(URL, OUT_DIR)
 
 			//await downloadTranslateLyric(URL, OUT_DIR, html)
 
@@ -57,30 +61,36 @@ async function main() {
 	}
 }
 
-type LyricToDownload = {
-		title: string,
-		url: string
-	}
-
-type AlbumData = {
-	lyrics: Array<LyricToDownload>
-}
-
-async function downloadAlbumsLyrics( url: string, outDir: string ) {
+async function downloadAlbumLyrics( url: string, outDir: string ) {
 	//const res = await Got(url)
 	//const html: string = res.body
 
-	const filePath = path.join(outDir, 'album.html')	
-
+	const filePath = path.join(outDir, 'album.json')	
 	//await fs.outputFile(filePath, html)
 
-	const html: string = await fs.readFile(filePath, 'utf8')
-	const virtualDom: DocumentFragment = JSDOM.fragment(html)
+	try {
+		const res = await Got(url)
+		const html: string = res.body
 
+		const virtualDom: DocumentFragment = JSDOM.fragment(html)
 
-	const albumData: AlbumData = getAlbumData(virtualDom)
+		const albumData: AlbumData = getAlbumData(virtualDom)
 
-	console.log(albumData.lyrics)
+		albumData.lyrics.map( l => {
+			let newLyric = JSON.parse(JSON.stringify(l))
+			newLyric.url += '/traduccion/espanol'
+			return newLyric
+		})
+
+		albumData.lyrics = await downloadAllLyrics(albumData, 4)
+		albumData.lyrics.map( l => extractTranslateLyric(JSON.parse(JSON.stringify(l))))
+
+		console.log(albumData.lyrics)
+		await fs.outputFile(filePath, JSON.parse(JSON.stringify(albumData)))
+
+	} catch(err) {
+		console.log(err)
+	}
 }
 
 function getAlbumData(virtualDom: DocumentFragment) {
@@ -98,7 +108,7 @@ function getAlbumData(virtualDom: DocumentFragment) {
     	lyric.url = 'https://www.musixmatch.com' + track.querySelector('a')!.getAttribute('href')
     	lyric.title = track.querySelector('h2.mui-cell__title')!.textContent || ''
 
-    	albumData.lyrics.push({ title: lyric.title, url: lyric.url })
+    	albumData.lyrics.push({ title: lyric.title, url: lyric.url, state: STATES.PENDING})
     }
 
     //albumData.lyricsToDownload.push(lyric)
@@ -107,49 +117,24 @@ function getAlbumData(virtualDom: DocumentFragment) {
   return albumData
 }
 
-async function downloadTranslateLyric( url:string, outDir: string, html: string ): Promise<TranslateLyric>{
-	const lyric: TranslateLyric = {
-		title: '',
-		art: [],
-		sp: [],
-		en: []
-	}
+function extractTranslateLyric(lyricWithHTML: LyricWithHTML): Promise<TranslateLyric>{
+	let lyric = JSON.parse(JSON.stringify(lyricWithHTML))
 
-	const virtualDom = createVirtualDom(html)
+	const virtualDom = createVirtualDom(lyric.html)
 
-	let translateLines: { 
-		en: Array<string>, 
-		sp: Array<string> 
-	} = getTranslateLines(virtualDom)
+	let translateLines = getTranslateLines(virtualDom)
 
 	lyric.en = translateLines.en
 	lyric.sp = translateLines.sp  	
 
   lyric.art = getLyricArtists(virtualDom) 
-   lyric.title = getTitle(virtualDom)
+  lyric.title = getTitle(virtualDom)
 	
 	lyric.text = getTextFormated(lyric)
 	
-	let pdfDoc = new jsPDF()
-	pdfDoc.text(lyric.text, 10, 10)
-
-	let filePath: string = path.join(outDir, `${lyric.title} (${lyric.art.join('-')}).pdf`) 
-
-	pdfDoc.save(filePath)
-
-	//await fs.outputFile(filePath, lyric.text)
 	console.log('Success!!')
 
 	return lyric
-}
-
-type TranslateLyric = {
-	title: string,
-	art: Array<string>
-
-	sp: Array<string>,
-	en: Array<string>,
-	text?: string
 }
 
 function createVirtualDom( html: string ): DocumentFragment {
@@ -157,11 +142,6 @@ function createVirtualDom( html: string ): DocumentFragment {
 	console.log(frag)
 
 	return frag
-}
-
-type TranslateLines = { 
-	en: Array<string>, 
-	sp: Array<string> 
 }
 
 function getTranslateLines(virtualDom: DocumentFragment): TranslateLines {

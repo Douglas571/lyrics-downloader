@@ -8,20 +8,30 @@ export const STATES = {
 	READY
 }
 
-export type TranslateLyric = {
+export type LyricToDownload = {
 	title: string,
-	art?: Array<string>
-
-	sp?: Array<string>,
-	en?: Array<string>,
-	
 	url: string,
-	html?: string,
-	text?: string,
-
 	state: string
 }
 
+export type LyricWithHTML = LyricToDownload & {
+	html: string
+}
+
+export type TranslateLyric = LyricWithHTML & {
+	art: Array<string>
+
+	sp: Array<string>,
+	en: Array<string>,
+
+	text: string,
+}
+
 export type AlbumData = {
-	lyrics: Array<TranslateLyric>
+	lyrics: Array<LyricToDownload | LyricWithHTML | TranslateLyric>
+}
+
+export type TranslateLines = { 
+	en: Array<string>, 
+	sp: Array<string> 
 }
