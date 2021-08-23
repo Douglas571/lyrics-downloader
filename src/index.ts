@@ -7,6 +7,8 @@ import { JSDOM } from 'jsdom'
 import { jsPDF } from 'jspdf'
 import path from 'path'
 
+//import reqAssist from './request-assistant'
+
 //import LyricFinder from './core/LyricFinder.js'
 
 (async () => { main() })()
@@ -55,11 +57,13 @@ async function main() {
 	}
 }
 
-type AlbumData = {
-	lyrics: {
+type LyricToDownload = {
 		title: string,
-		url: Array<string>
+		url: string
 	}
+
+type AlbumData = {
+	lyrics: Array<LyricToDownload>
 }
 
 async function downloadAlbumsLyrics( url: string, outDir: string ) {
@@ -80,20 +84,24 @@ async function downloadAlbumsLyrics( url: string, outDir: string ) {
 }
 
 function getAlbumData(virtualDom: DocumentFragment) {
-	let albumData = { lyrics: [] }
+	let albumData: AlbumData = { lyrics: []}
 
 	let tracks = virtualDom.querySelectorAll('li[id*="track_"]')
   tracks.forEach( track => {
-    let lyric = {}
+    let lyric
 
-    lyric.state = 1
-    lyric.track = Number(track.querySelector('div.mui-cell__index-view').textContent)
-    lyric.url = 'https://www.musixmatch.com' + track.querySelector('a').getAttribute('href')
-    lyric.title = track.querySelector('h2.mui-cell__title').textContent
+    if( track ) {
+    	lyric = { title: '', url: '' }
+
+    	//lyric.state = 1
+    	//lyric.track = Number(track.querySelector('div.mui-cell__index-view')!.textContent)
+    	lyric.url = 'https://www.musixmatch.com' + track.querySelector('a')!.getAttribute('href')
+    	lyric.title = track.querySelector('h2.mui-cell__title')!.textContent || ''
+
+    	albumData.lyrics.push({ title: lyric.title, url: lyric.url })
+    }
 
     //albumData.lyricsToDownload.push(lyric)
-
-    albumData.lyrics.push({ title: lyric.title, url: lyric.url })
   })
 
   return albumData
